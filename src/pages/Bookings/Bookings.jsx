@@ -14,7 +14,7 @@ const Bookings = () => {
         console.log(data);
         setBookings(data);
       });
-  }, []);
+  }, [url]);
   const handleDelete = (id) => {
     const proceed = confirm("Are you sure you want to delete");
     if (proceed) {
@@ -31,6 +31,29 @@ const Bookings = () => {
           }
         });
     }
+  };
+  const handleConfirm = (id) => {
+    fetch(`http://localhost:5000/bookings/${id}`, {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ status: "confirm" }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log(data);
+        if (data.modifiedCount > 0) {
+          //update state
+          const remainingBooking = bookings.filter(
+            (booking) => booking._id !== id
+          );
+          const updated = bookings.find((booking) => booking._id === id);
+          updated.status = "confirm";
+          const newBookings = [updated, ...remainingBooking];
+          setBookings(newBookings);
+        }
+      });
   };
   return (
     <div>
@@ -54,13 +77,23 @@ const Bookings = () => {
             </tr>
           </thead>
           <tbody>
-            {bookings.map((booking) => (
-              <BookingRow
-                key={booking._id}
-                booking={booking}
-                handleDelete={handleDelete}
-              ></BookingRow>
-            ))}
+            {bookings
+              .sort((a, b) => {
+                if (a.status === "confirm" && b.status !== "confirm") {
+                  return -1;
+                } else if (a.status !== "confirm" && b.status === "confirm") {
+                  return 1;
+                }
+                return 0;
+              })
+              .map((booking) => (
+                <BookingRow
+                  key={booking._id}
+                  booking={booking}
+                  handleDelete={handleDelete}
+                  handleConfirm={handleConfirm}
+                ></BookingRow>
+              ))}
           </tbody>
         </table>
       </div>
